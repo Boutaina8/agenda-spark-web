@@ -1,13 +1,48 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import { TodoProvider } from '@/context/TodoContext';
+import AddTodoForm from '@/components/AddTodoForm';
+import TodoList from '@/components/TodoList';
+import { motion } from 'framer-motion';
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <TodoProvider>
+      <div className="min-h-screen bg-gradient-to-b from-sky-50 to-indigo-50">
+        <div className="max-w-3xl mx-auto px-4 py-12">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <header className="text-center mb-10">
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                Task Manager
+              </h1>
+              <p className="text-gray-600">
+                Keep track of your tasks and stay productive
+              </p>
+            </header>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <AddTodoForm />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <TodoList />
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </TodoProvider>
   );
 };
 
