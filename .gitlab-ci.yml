@@ -1,0 +1,62 @@
+stages:
+  - test
+  - build
+  - security
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+cache:
+  paths:
+    - node_modules/
+
+unit_tests:
+  stage: test
+  image: node:18
+  script:
+    - npm ci
+    - npm run test
+  artifacts:
+    paths:
+      - coverage/
+
+build_react:
+  stage: build
+  image: node:18
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+
+build_docker:
+  stage: build
+  script:
+    - docker build -t agenda-spark-web .
+
+scan_trivy:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - trivy image agenda-spark-web > trivy-report.txt
+  artifacts:
+    paths:
+      - trivy-report.txt
+
+scan_gitleaks:
+  stage: security
+  image: zricethezav/gitleaks
+  script:
+    - gitleaks detect --source=. --report-path=gitleaks-report.json
+  artifacts:
+    paths:
+      - gitleaks-report.json
+
+scan_snyk:
+  stage: security
+  image: snyk/snyk:docker
+  script:
+    - snyk test --all-projects
+  variables:
+    SNYK_TOKEN: $SNYK_TOKEN
