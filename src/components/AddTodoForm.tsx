@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Priority } from '@/types/todo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
+import { Plus, AlertTriangle } from 'lucide-react';
+import { sanitizeInput, validateInput } from '@/utils/securityUtils';
+import { toast } from '@/components/ui/use-toast';
 
 const AddTodoForm: React.FC = () => {
   const { addTodo } = useTodo();
@@ -15,16 +17,54 @@ const AddTodoForm: React.FC = () => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [validationError, setValidationError] = useState('');
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTitle(value);
+    
+    // Clear previous validation errors when user starts typing again
+    if (validationError) setValidationError('');
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setDescription(value);
+    
+    // Clear previous validation errors when user starts typing again
+    if (validationError) setValidationError('');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim()) {
-      addTodo(title, description, priority);
-      setTitle('');
-      setDescription('');
-      setPriority('medium');
-      setIsExpanded(false);
+    
+    // Validate inputs before submission
+    if (!title.trim()) {
+      setValidationError('Task title cannot be empty');
+      return;
     }
+    
+    // Check for potentially malicious input
+    if (!validateInput(title) || !validateInput(description)) {
+      setValidationError('Invalid input detected. Please remove any HTML or script tags.');
+      toast({
+        title: 'Security Warning',
+        description: 'Potentially harmful content was blocked.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    // Sanitize inputs before adding to the todo list
+    const sanitizedTitle = sanitizeInput(title);
+    const sanitizedDescription = sanitizeInput(description);
+    
+    addTodo(sanitizedTitle, sanitizedDescription, priority);
+    setTitle('');
+    setDescription('');
+    setPriority('medium');
+    setIsExpanded(false);
+    setValidationError('');
   };
 
   const handleTitleFocus = () => {
@@ -36,6 +76,7 @@ const AddTodoForm: React.FC = () => {
     setDescription('');
     setPriority('medium');
     setIsExpanded(false);
+    setValidationError('');
   };
 
   return (
@@ -43,17 +84,25 @@ const AddTodoForm: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-3">
         <Input
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={handleTitleChange}
           placeholder="Add a new task..."
           onFocus={handleTitleFocus}
           className="font-medium"
+          aria-invalid={!!validationError}
         />
+        
+        {validationError && (
+          <div className="flex items-center gap-2 text-destructive text-sm">
+            <AlertTriangle className="h-4 w-4" />
+            <span>{validationError}</span>
+          </div>
+        )}
         
         {isExpanded && (
           <>
             <Textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={handleDescriptionChange}
               placeholder="Add a description (optional)"
               className="resize-none min-h-[80px]"
             />
